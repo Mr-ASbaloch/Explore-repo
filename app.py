@@ -339,7 +339,7 @@ with st.sidebar:
             st.text(st.session_state._llm_error)
 
 # Main area: Chat UI
-st.title("Heavy Duty ==> SniffCode")
+st.title("Heavy Duty -> SniffCode")
 st.markdown("Ask questions about the code you indexed. The system will answer based on repository context only.")
 
 col_main, col_side = st.columns([3, 1])
