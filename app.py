@@ -16,9 +16,9 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 # --------------------------------------------------------
-# BACKEND API KEY (HARD-CODE HERE)
+# BACKEND API KEY
 # --------------------------------------------------------
-GROQ_API_KEY = "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"   # <--- Put your API key here
+GROQ_API_KEY = "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"
 
 
 # --------------------------------------------------------
@@ -32,20 +32,14 @@ class HeavyDutyRAG:
         self.llm = None
         self.repo_path = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        # Automatically initialize the LLM using backend API key
         self.initialize_llm()
 
     def initialize_llm(self):
-        if not GROQ_API_KEY.strip():
-            raise ValueError("Backend API key is missing. Please set GROQ_API_KEY.")
-
         self.llm = ChatGroq(
             model="llama-3.3-70b-versatile",
             temperature=0.5,
-            api_key=GROQ_API_KEY.strip()
+            api_key=GROQ_API_KEY
         )
-        return "API key loaded from backend."
 
     def get_source_files(self, directory_path):
         documents = []
@@ -64,50 +58,42 @@ class HeavyDutyRAG:
             for file in files:
                 ext = os.path.splitext(file)[1]
                 if ext in allowed_extensions:
-                    file_path = os.path.join(root, file)
                     try:
+                        file_path = os.path.join(root, file)
                         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                             content = f.read()
-                            if len(content) < 50:
-                                continue
-                            rel_path = os.path.relpath(file_path, directory_path)
-                            documents.append(Document(
-                                page_content=content,
-                                metadata={"source": rel_path}
-                            ))
-                    except Exception:
+                        if len(content) < 50:
+                            continue
+
+                        rel_path = os.path.relpath(file_path, directory_path)
+                        documents.append(Document(
+                            page_content=content,
+                            metadata={"source": rel_path}
+                        ))
+                    except:
                         pass
-        
+
         return documents
 
     def load_repository(self, repo_url):
-        if not self.llm:
-            return "Error: LLM initialization failed."
-
         if self.repo_path and os.path.exists(self.repo_path):
             shutil.rmtree(self.repo_path)
 
         self.repo_path = tempfile.mkdtemp()
 
-        try:
-            Repo.clone_from(repo_url, self.repo_path)
-        except Exception as e:
-            return f"Clone error: {str(e)}"
+        Repo.clone_from(repo_url, self.repo_path)
 
         documents = self.get_source_files(self.repo_path)
         if not documents:
             return "No valid code files found."
 
         text_splitter = RecursiveCharacterTextSplitter.from_language(
-            language=Language.PYTHON,
-            chunk_size=2000,
-            chunk_overlap=200
+            language=Language.PYTHON, chunk_size=2000, chunk_overlap=200
         )
         split_docs = text_splitter.split_documents(documents)
 
-        MAX_CHUNKS = 5000
-        if len(split_docs) > MAX_CHUNKS:
-            split_docs = split_docs[:MAX_CHUNKS]
+        if len(split_docs) > 5000:
+            split_docs = split_docs[:5000]
 
         embeddings = HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2",
@@ -128,8 +114,7 @@ class HeavyDutyRAG:
             return "Please load a GitHub repo first."
 
         template = """
-        You are an expert Senior Developer. Answer strictly based on the provided code context.
-        If mentioning code, reference the file name.
+        You are a Senior Developer. You must answer based on the provided code context.
 
         Context:
         {context}
@@ -149,28 +134,29 @@ class HeavyDutyRAG:
 
 
 # --------------------------------------------------------
-# Streamlit UI
+# STREAMLIT APP
 # --------------------------------------------------------
 
-rag = HeavyDutyRAG()
+# Create RAG system once and store in session
+if "rag" not in st.session_state:
+    st.session_state.rag = HeavyDutyRAG()
 
-st.title("Heavy Duty Repo Chat – Streamlit Version (Backend API Key)")
-st.write("Backend-injected Groq API key. No manual input required.")
+rag = st.session_state.rag
 
+st.title("Heavy Duty Repo Chat – Streamlit Version")
 repo_url = st.text_input("GitHub Repository URL")
 
 if st.button("Clone & Index Repository"):
     with st.spinner("Processing repository..."):
-        msg = rag.load_repository(repo_url)
-    st.success(msg)
+        result = rag.load_repository(repo_url)
+    st.success(result)
 
-st.subheader("Chat with Repository Code")
-user_query = st.text_area("Ask a question...")
+query = st.text_area("Ask something about the repository")
 
 if st.button("Send"):
-    if not user_query.strip():
+    if not query.strip():
         st.warning("Please type a question.")
     else:
-        with st.spinner("Generating answer..."):
-            answer = rag.chat_response(user_query)
+        with st.spinner("Thinking..."):
+            answer = rag.chat_response(query)
         st.write(answer)
