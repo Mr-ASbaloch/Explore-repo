@@ -21,7 +21,7 @@ from langchain_core.output_parsers import StrOutputParser
 # -----------------------
 # CONFIG: put your API key here
 # -----------------------
-GROQ_API_KEY = "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"  # <-- replace with your Groq API key
+GROQ_API_KEY = ""  # <-- replace with your Groq API key
 
 # -----------------------
 # Utility functions
@@ -291,7 +291,7 @@ Question: {question}
 # Streamlit UI (Sidebar layout)
 # -----------------------
 
-st.set_page_config(page_title="Heavy Duty Repo Chat", layout="wide")
+st.set_page_config(page_title="ChatMyRepo", layout="wide")
 
 ensure_session_state_keys()
 
