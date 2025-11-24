@@ -1,0 +1,12 @@
+streamlit
+torch
+gradio-client
+gitpython
+langchain
+langchain-groq
+langchain-huggingface
+chromadb
+sentence-transformers
+langchain-text-splitters
+langchain-chroma
+python-dotenv
