@@ -16,6 +16,12 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 # --------------------------------------------------------
+# BACKEND API KEY (HARD-CODE HERE)
+# --------------------------------------------------------
+GROQ_API_KEY = "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"   # <--- Put your API key here
+
+
+# --------------------------------------------------------
 # RAG Class
 # --------------------------------------------------------
 
@@ -27,16 +33,19 @@ class HeavyDutyRAG:
         self.repo_path = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    def initialize_llm(self, api_key):
-        if not api_key.strip():
-            return "Error: API Key is empty."
+        # Automatically initialize the LLM using backend API key
+        self.initialize_llm()
+
+    def initialize_llm(self):
+        if not GROQ_API_KEY.strip():
+            raise ValueError("Backend API key is missing. Please set GROQ_API_KEY.")
 
         self.llm = ChatGroq(
             model="llama-3.3-70b-versatile",
             temperature=0.5,
-            api_key=api_key.strip()
+            api_key=GROQ_API_KEY.strip()
         )
-        return "API Key set successfully."
+        return "API key loaded from backend."
 
     def get_source_files(self, directory_path):
         documents = []
@@ -73,7 +82,7 @@ class HeavyDutyRAG:
 
     def load_repository(self, repo_url):
         if not self.llm:
-            return "Error: Set API key first."
+            return "Error: LLM initialization failed."
 
         if self.repo_path and os.path.exists(self.repo_path):
             shutil.rmtree(self.repo_path)
@@ -145,32 +154,23 @@ class HeavyDutyRAG:
 
 rag = HeavyDutyRAG()
 
-st.title("Heavy Duty Repo Chat – Streamlit Version")
-st.write("Smart RAG system for large GitHub repositories.")
+st.title("Heavy Duty Repo Chat – Streamlit Version (Backend API Key)")
+st.write("Backend-injected Groq API key. No manual input required.")
 
-# Sidebar settings
-st.sidebar.header("Configuration")
-api_key = st.sidebar.text_input("Groq API Key", type="password")
+repo_url = st.text_input("GitHub Repository URL")
 
-if st.sidebar.button("Set API Key"):
-    msg = rag.initialize_llm(api_key)
-    st.sidebar.success(msg)
-
-repo_url = st.sidebar.text_input("GitHub Repo URL")
-
-if st.sidebar.button("Clone & Index Repository"):
-    with st.spinner("Cloning and indexing repository..."):
+if st.button("Clone & Index Repository"):
+    with st.spinner("Processing repository..."):
         msg = rag.load_repository(repo_url)
-    st.sidebar.success(msg)
+    st.success(msg)
 
-# Chat interface
-st.header("Chat with the Repository")
-query = st.text_area("Ask a question about the code...")
+st.subheader("Chat with Repository Code")
+user_query = st.text_area("Ask a question...")
 
 if st.button("Send"):
-    if not query.strip():
-        st.warning("Write a question.")
+    if not user_query.strip():
+        st.warning("Please type a question.")
     else:
-        with st.spinner("Thinking..."):
-            answer = rag.chat_response(query)
+        with st.spinner("Generating answer..."):
+            answer = rag.chat_response(user_query)
         st.write(answer)
