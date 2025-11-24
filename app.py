@@ -21,7 +21,7 @@ from langchain_core.output_parsers import StrOutputParser
 # -----------------------
 # CONFIG: put your API key here
 # -----------------------
-GROQ_API_KEY = ""  # <-- replace with your Groq API key
+GROQ_API_KEY = "eplace with your Groq API key"  # <-- replace with your Groq API key
 
 # -----------------------
 # Utility functions
@@ -339,7 +339,7 @@ with st.sidebar:
             st.text(st.session_state._llm_error)
 
 # Main area: Chat UI
-st.title("Heavy Duty Repo Chat")
+st.title("Heavy Duty ==> SniffCode")
 st.markdown("Ask questions about the code you indexed. The system will answer based on repository context only.")
 
 col_main, col_side = st.columns([3, 1])
